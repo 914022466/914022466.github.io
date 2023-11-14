@@ -32,7 +32,7 @@
 <meta property="og:image" content="http://example.com/images/4.PNG">
 <meta property="og:image" content="http://example.com/images/4.PNG">
 <meta property="og:image" content="http://example.com/images/5.PNG">
-<meta property="og:image" content="http://example.com/image/6.png">
+<meta property="og:image" content="http://example.com/images/6.png">
 <meta property="og:image" content="http://example.com/images/code1.png">
 <meta property="og:image" content="http://example.com/images/code2.png">
 <meta property="og:image" content="http://example.com/images/code3.png">
@@ -57,7 +57,7 @@
 <meta property="og:image" content="http://example.com/images/code22.png">
 <meta property="og:image" content="http://example.com/images/code23.png">
 <meta property="article:published_time" content="2023-11-12T10:02:21.000Z">
-<meta property="article:modified_time" content="2023-11-14T15:13:45.706Z">
+<meta property="article:modified_time" content="2023-11-14T15:16:06.101Z">
 <meta property="article:author" content="axiang">
 <meta property="article:tag" content="rocksdb">
 <meta name="twitter:card" content="summary">
@@ -211,7 +211,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-11-14 23:13:45" itemprop="dateModified" datetime="2023-11-14T23:13:45+08:00">2023-11-14</time>
+                <time title="Modified: 2023-11-14 23:16:06" itemprop="dateModified" datetime="2023-11-14T23:16:06+08:00">2023-11-14</time>
               </span>
 
           
@@ -228,7 +228,7 @@
         <p>[merged]<a target="_blank" rel="noopener" href="https://github.com/facebook/rocksdb/pull/11969">https://github.com/facebook/rocksdb/pull/11969</a></p>
 <h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>社区rocksdb的ImportColumnFamilyJob::GetIngestedFileInfo存在bug，调用SeekToLast时没有判断iter的有效性，导致给plaintable赋值了错误的largest internal key，使得VersionStorageInfo中import进来sst的FileMeta里smallest key和largest key相等，从而导致调用GetOverlappingInputs判断应该involve哪些sst时出问题<br>该问题会导致使用Plaintable的rocksdb调用CreateColumnFamilyWithImport时，在后续的写入行为中可能出现overlapping或者out-of-order报错</p>
 <h1 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h1><h2 id="overlapping"><a href="#overlapping" class="headerlink" title="overlapping"></a>overlapping</h2><p>服务运行一段时间有写接口报错，查看日志，发现有compaction报错，<br><img src="/images/1.PNG" alt="overlap"><br>其中#358为刚刚compaction生成的文件<br><img src="/images/2.PNG" alt="overlap"><br>怀疑是数据问题，更换数据快照后写异常依然存在，但是cf不同：<br><img src="/images/4.PNG" alt="图片3"><br>这一次出现问题的两个sst都是刚刚compaction产生的<br><img src="/images/4.PNG" alt="图片4"><br>迁移之后，消费一段时间同样出现了写异常的问题<br><img src="/images/5.PNG" alt="图片5"><br>共有20,52,84，三个cf前后发生过写异常，尝试单测复现，无果</p>
-<h2 id="out-of-order"><a href="#out-of-order" class="headerlink" title="out-of-order"></a>out-of-order</h2><p>有时，报错<br><img src="/image/6.png" alt="图片5"></p>
+<h2 id="out-of-order"><a href="#out-of-order" class="headerlink" title="out-of-order"></a>out-of-order</h2><p>有时，报错<br><img src="/images/6.png" alt="图片5"></p>
 <h1 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h1><h2 id="方向一-CreateColumnFamilyWithImport-参数有误"><a href="#方向一-CreateColumnFamilyWithImport-参数有误" class="headerlink" title="方向一  CreateColumnFamilyWithImport 参数有误"></a>方向一  CreateColumnFamilyWithImport 参数有误</h2><p>根据日志情况来看，rocksdb自己compaction生成了一个新的sst，在和另一个已经存在的sst做校验时出现overlapping，而且是user_key存在overlapping，由于FilePicker等逻辑没有修改过，所以怀疑调用CreateColumnFamilyWithImport时给的metadata参数可能有问题。</p>
 <ol>
 <li><p>根据日志，cp出有问题的sst，以及MANIFEST-SELF文件<br>Compaction error: Corruption: force_consistency_checks: VersionBuilder: L2 has overlapping ranges: file #226 largest key: ‘000034000800FFFFF6DF11000000’ seq:0, type:1 vs. file #153 smallest key: ‘000034000800091339A215000000’ seq:0, type:1</p>
