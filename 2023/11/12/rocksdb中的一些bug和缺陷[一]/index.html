@@ -48,16 +48,16 @@
 <meta property="og:image" content="http://example.com/images/code13.png">
 <meta property="og:image" content="http://example.com/images/code14.png">
 <meta property="og:image" content="http://example.com/images/code15.png">
-<meta property="og:image" content="http://example.com/images/code16.png">
-<meta property="og:image" content="http://example.com/images/code17.png">
+<meta property="og:image" content="http://example.com/images/code16.jpeg">
+<meta property="og:image" content="http://example.com/images/code17.jpeg">
 <meta property="og:image" content="http://example.com/images/code18.png">
 <meta property="og:image" content="http://example.com/images/code19.png">
 <meta property="og:image" content="http://example.com/images/code20.png">
 <meta property="og:image" content="http://example.com/images/code21.png">
 <meta property="og:image" content="http://example.com/images/code22.png">
-<meta property="og:image" content="http://example.com/images/code23.png">
+<meta property="og:image" content="http://example.com/images/code23.jpeg">
 <meta property="article:published_time" content="2023-11-12T10:02:21.000Z">
-<meta property="article:modified_time" content="2023-11-14T15:16:06.101Z">
+<meta property="article:modified_time" content="2023-11-14T15:21:50.658Z">
 <meta property="article:author" content="axiang">
 <meta property="article:tag" content="rocksdb">
 <meta name="twitter:card" content="summary">
@@ -211,7 +211,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-11-14 23:16:06" itemprop="dateModified" datetime="2023-11-14T23:16:06+08:00">2023-11-14</time>
+                <time title="Modified: 2023-11-14 23:21:50" itemprop="dateModified" datetime="2023-11-14T23:21:50+08:00">2023-11-14</time>
               </span>
 
           
@@ -257,9 +257,9 @@
 <p><img src="/images/code9.png" alt="图片"><br>PrepareApply的调用在VersionSet::ProcessManifestWrites<br>接下来回头看SortFileByOverlappingRatio，这是默认下情况的行为<br>回到PickFileToCompact，组织输入<br><img src="/images/code10.png" alt="图片"></p>
 <p>获得input层所有sst的smallest和largest key，再根据GetOverlappingInputs获得output层需要involve哪些sst<br><img src="/images/code11.png" alt="图片"><br>GetRange逻辑，比较简单，L0的时候遍历获取最小最大key，非L0直接根据第一个和最后一个sst的边界key赋值最小最大key<br><img src="/images/code12.png" alt="图片"></p>
 <p>看下GetOverlappingInputs，我们先看非L0的时候，因为目前的日志全是非L0发生overlapping<br><img src="/images/code13.png" alt="图片"></p>
-<p><img src="/images/code14.png" alt="图片"><br><img src="/images/code15.png" alt="图片"><br>整体来说就是定义比较函数，然后用标准库的lower_bound来定位，再根据是否有is_overlapping做调整<br>加上如上日志，看看有没有什么发现<br><img src="/images/code16.png" alt="图片"><br>很奇怪，smallest key和largest key总是相等<br><img src="/images/code17.png" alt="图片"><br>接下来看下CreateColumnFamilyWithImport中有没有重新赋值smallest和largest的逻辑</p>
+<p><img src="/images/code14.png" alt="图片"><br><img src="/images/code15.png" alt="图片"><br>整体来说就是定义比较函数，然后用标准库的lower_bound来定位，再根据是否有is_overlapping做调整<br>加上如上日志，看看有没有什么发现<br><img src="/images/code16.jpeg" alt="图片"><br>很奇怪，smallest key和largest key总是相等<br><img src="/images/code17.jpeg" alt="图片"><br>接下来看下CreateColumnFamilyWithImport中有没有重新赋值smallest和largest的逻辑</p>
 <p><img src="/images/code18.png" alt="图片"><br>注意到入参的meta传递到了import_job里<br><img src="/images/code19.png" alt="图片"><br><img src="/images/code20.png" alt="图片"></p>
-<p>调用GetIngestedFileInfo时，会调用SeekToFirst和SeekToLast重新赋值largest和smallest，但是plaintable下不支持SeekToLast<br><img src="/images/code21.png" alt="图片"><br>plaintable 不支持SeekToLast<br><img src="/images/code22.png" alt="图片"><br>验证了下，实锤<br><img src="/images/code23.png" alt="图片"><br>梳理<br>在调用CreateColumnFamilyWithImport之后 ， 由于plaintable不支持seekToLast，叠加上rocksdb未判断迭代器有效性，导致每个file 的meta里smallest和largest相等，从而导致调用GetOverlappingInputs时involve了错误的sst，继而导致报错</p>
+<p>调用GetIngestedFileInfo时，会调用SeekToFirst和SeekToLast重新赋值largest和smallest，但是plaintable下不支持SeekToLast<br><img src="/images/code21.png" alt="图片"><br>plaintable 不支持SeekToLast<br><img src="/images/code22.png" alt="图片"><br>验证了下，实锤<br><img src="/images/code23.jpeg" alt="图片"><br>梳理<br>在调用CreateColumnFamilyWithImport之后 ， 由于plaintable不支持seekToLast，叠加上rocksdb未判断迭代器有效性，导致每个file 的meta里smallest和largest相等，从而导致调用GetOverlappingInputs时involve了错误的sst，继而导致报错</p>
 <h1 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h1><p>方案<br>GetIngestedFileInfo需要获取的是最小和最大的internal key，而传参时rocksdb::ExportImportFilesMetaData里只支持传入最小和最大的user key</p>
 <ol>
 <li>自己根据seqno和user key拼接internal key，应该不行，底层sst的seqno为0 ，应该是没赋值，初始化时值就为0，这个具体原因还不清楚</li>
