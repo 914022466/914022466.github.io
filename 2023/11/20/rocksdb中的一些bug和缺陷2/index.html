@@ -28,7 +28,7 @@
 <meta property="og:description" content="写异常File is too large for PlainTableReader原因写入过猛时，rocksdb L0积攒太多sst文件（此时已经write slow down），L0发生universal compact 时involve了所有L0的sst，且output_level 为 0的compact不会对输出sst进行切分    PlainTableBuilder  在Compactio">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2023-11-20T12:00:18.000Z">
-<meta property="article:modified_time" content="2023-11-21T10:03:01.829Z">
+<meta property="article:modified_time" content="2023-11-21T11:26:22.625Z">
 <meta property="article:author" content="axiang">
 <meta property="article:tag" content="rocksdb">
 <meta name="twitter:card" content="summary">
@@ -181,7 +181,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-11-21 18:03:01" itemprop="dateModified" datetime="2023-11-21T18:03:01+08:00">2023-11-21</time>
+                <time title="Modified: 2023-11-21 19:26:22" itemprop="dateModified" datetime="2023-11-21T19:26:22+08:00">2023-11-21</time>
               </span>
 
           
@@ -215,6 +215,9 @@
 <p>坑3<br>新版rocksdb编译最好使用gcc8（不然可能编译不过，原因未知）</p>
 <h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>坑1<br>反复coredump，最后确认是dboption有问题，hdfs无法使用mmap<br>改为<br>dboptions.allow_mmap_writes &#x3D; false;<br>dboptions.allow_mmap_reads &#x3D; false;</p>
 <p>坑2<br>open时wal路径有问题，随便找个路径创建了个</p>
+<h1 id="cf-paths相关的bug"><a href="#cf-paths相关的bug" class="headerlink" title="cf_paths相关的bug"></a>cf_paths相关的bug</h1><p>由于leveldb最早是不支持cf的，所以也就没有cf_paths，所有sst只能有同一个path prefix，所以如果使用了cf_paths，就有一些函数不能用<br>例如: checkpoint 中会调用CheckpointImpl::CreateCustomCheckpoint</p>
+
+<p>而 GetLiveFiles中会抹除掉 path信息</p>
 
     </div>
 
@@ -233,7 +236,7 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2023/11/12/rocksdb%E4%B8%AD%E7%9A%84%E4%B8%80%E4%BA%9Bbug%E5%92%8C%E7%BC%BA%E9%99%B7%5B%E4%B8%80%5D/" rel="prev" title="rocksdb中的一些bug和缺陷[一]">
+    <a href="/2023/11/12/rocksdb%E4%B8%AD%E7%9A%84%E4%B8%80%E4%BA%9Bbug%E5%92%8C%E7%BC%BA%E9%99%B71/" rel="prev" title="rocksdb中的一些bug和缺陷[一]">
       <i class="fa fa-chevron-left"></i> rocksdb中的一些bug和缺陷[一]
     </a></div>
       <div class="post-nav-item"></div>
@@ -295,7 +298,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%99%E5%BC%82%E5%B8%B8File-is-too-large-for-PlainTableReader"><span class="nav-number">1.</span> <span class="nav-text">写异常File is too large for PlainTableReader</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.1.</span> <span class="nav-text">原因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A4%BE%E5%8C%BA%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.2.</span> <span class="nav-text">社区解决方案</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#rocksdb-on-hdfs-%E8%B8%A9%E5%9D%91"><span class="nav-number">2.</span> <span class="nav-text">rocksdb on hdfs 踩坑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E4%B8%8A"><span class="nav-number">2.1.</span> <span class="nav-text">编译上</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-number">2.2.</span> <span class="nav-text">使用</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%99%E5%BC%82%E5%B8%B8File-is-too-large-for-PlainTableReader"><span class="nav-number">1.</span> <span class="nav-text">写异常File is too large for PlainTableReader</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.1.</span> <span class="nav-text">原因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A4%BE%E5%8C%BA%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.2.</span> <span class="nav-text">社区解决方案</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#rocksdb-on-hdfs-%E8%B8%A9%E5%9D%91"><span class="nav-number">2.</span> <span class="nav-text">rocksdb on hdfs 踩坑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E4%B8%8A"><span class="nav-number">2.1.</span> <span class="nav-text">编译上</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-number">2.2.</span> <span class="nav-text">使用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cf-paths%E7%9B%B8%E5%85%B3%E7%9A%84bug"><span class="nav-number">3.</span> <span class="nav-text">cf_paths相关的bug</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

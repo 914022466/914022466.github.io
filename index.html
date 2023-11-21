@@ -178,7 +178,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-11-21 18:03:01" itemprop="dateModified" datetime="2023-11-21T18:03:01+08:00">2023-11-21</time>
+                <time title="Modified: 2023-11-21 19:26:22" itemprop="dateModified" datetime="2023-11-21T19:26:22+08:00">2023-11-21</time>
               </span>
 
           
@@ -212,6 +212,9 @@
 <p>坑3<br>新版rocksdb编译最好使用gcc8（不然可能编译不过，原因未知）</p>
 <h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>坑1<br>反复coredump，最后确认是dboption有问题，hdfs无法使用mmap<br>改为<br>dboptions.allow_mmap_writes &#x3D; false;<br>dboptions.allow_mmap_reads &#x3D; false;</p>
 <p>坑2<br>open时wal路径有问题，随便找个路径创建了个</p>
+<h1 id="cf-paths相关的bug"><a href="#cf-paths相关的bug" class="headerlink" title="cf_paths相关的bug"></a>cf_paths相关的bug</h1><p>由于leveldb最早是不支持cf的，所以也就没有cf_paths，所有sst只能有同一个path prefix，所以如果使用了cf_paths，就有一些函数不能用<br>例如: checkpoint 中会调用CheckpointImpl::CreateCustomCheckpoint</p>
+
+<p>而 GetLiveFiles中会抹除掉 path信息</p>
 
       
     </div>
@@ -231,7 +234,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2023/11/12/rocksdb%E4%B8%AD%E7%9A%84%E4%B8%80%E4%BA%9Bbug%E5%92%8C%E7%BC%BA%E9%99%B7[%E4%B8%80]/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/11/12/rocksdb%E4%B8%AD%E7%9A%84%E4%B8%80%E4%BA%9Bbug%E5%92%8C%E7%BC%BA%E9%99%B71/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -245,7 +248,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2023/11/12/rocksdb%E4%B8%AD%E7%9A%84%E4%B8%80%E4%BA%9Bbug%E5%92%8C%E7%BC%BA%E9%99%B7%5B%E4%B8%80%5D/" class="post-title-link" itemprop="url">rocksdb中的一些bug和缺陷[一]</a>
+            <a href="/2023/11/12/rocksdb%E4%B8%AD%E7%9A%84%E4%B8%80%E4%BA%9Bbug%E5%92%8C%E7%BC%BA%E9%99%B71/" class="post-title-link" itemprop="url">rocksdb中的一些bug和缺陷[一]</a>
         </h2>
 
         <div class="post-meta">
