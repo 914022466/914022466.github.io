@@ -178,7 +178,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-11-21 17:53:27" itemprop="dateModified" datetime="2023-11-21T17:53:27+08:00">2023-11-21</time>
+                <time title="Modified: 2023-11-21 18:03:01" itemprop="dateModified" datetime="2023-11-21T18:03:01+08:00">2023-11-21</time>
               </span>
 
           
@@ -198,6 +198,20 @@
 
 <p>PlainTableBuilder  在CompactionJob::ProcessKeyValueCompaction（compaction_job.cc  ）  中调用 Add ，此时 使用了uint64_t 来记录 offset_(table&#x2F;plain_table_builder.cc) ，会超过 PlainTableIndex::kMaxFileSize</p>
 <h2 id="社区解决方案"><a href="#社区解决方案" class="headerlink" title="社区解决方案"></a>社区解决方案</h2><p><a target="_blank" rel="noopener" href="https://github.com/facebook/rocksdb/issues/6889">https://github.com/facebook/rocksdb/issues/6889</a>  <a target="_blank" rel="noopener" href="https://github.com/facebook/rocksdb/pull/5329">https://github.com/facebook/rocksdb/pull/5329</a><br>社区推荐使用max_compaction_bytes限制L0 compaction<br>而我们使用的rocksdb 5.14，max_compaction_bytes还无法限制L0 compaction</p>
+<h1 id="rocksdb-on-hdfs-踩坑"><a href="#rocksdb-on-hdfs-踩坑" class="headerlink" title="rocksdb on hdfs 踩坑"></a>rocksdb on hdfs 踩坑</h1><h2 id="编译上"><a href="#编译上" class="headerlink" title="编译上"></a>编译上</h2><p>坑1<br>我们使用的rocksdb 5.14.0，编译直接报错，头文件包含不对</p>
+
+
+<p>最新的master版本已经fix了 <a target="_blank" rel="noopener" href="https://github.com/facebook/rocksdb/blob/master/env/env_hdfs.cc">https://github.com/facebook/rocksdb/blob/master/env/env_hdfs.cc</a></p>
+
+
+
+<p>坑2<br>我用的编译命令是<br>USE_HDFS&#x3D;1 JAVA_HOME&#x3D;&#x2F;opt&#x2F;tiger&#x2F;jdk&#x2F;jdk1.8 LD_LIBRARY_PATH&#x3D;$LD_LIBRARY_PATH:&#x2F;opt&#x2F;tiger&#x2F;jdk&#x2F;jdk1.8&#x2F;jre&#x2F;lib&#x2F;amd64&#x2F;server:&#x2F;opt&#x2F;tiger&#x2F;jdk&#x2F;jdk1.8&#x2F;jre&#x2F;lib&#x2F;amd64&#x2F; make static_lib -j100</p>
+<p>编译时DEBUG_LEVEL不生效，在Makefile强行指定</p>
+
+
+<p>坑3<br>新版rocksdb编译最好使用gcc8（不然可能编译不过，原因未知）</p>
+<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><p>坑1<br>反复coredump，最后确认是dboption有问题，hdfs无法使用mmap<br>改为<br>dboptions.allow_mmap_writes &#x3D; false;<br>dboptions.allow_mmap_reads &#x3D; false;</p>
+<p>坑2<br>open时wal路径有问题，随便找个路径创建了个</p>
 
       
     </div>
